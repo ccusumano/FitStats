@@ -104,11 +104,11 @@ class HealthKitManager: ObservableObject {
     private func saveWorkoutsToCoreData(_ workouts: [HKWorkout]) {
         let context = PersistenceController.shared.container.viewContext
         
-        print("📥 Importing \(workouts.count) workouts from HealthKit")
+        print("ðŸ“¥ Importing \(workouts.count) workouts from HealthKit")
         
         for workout in workouts {
             // Debug: Print what workout type we're receiving
-            print("🏃 Workout: \(workout.workoutActivityType.rawValue) - Date: \(workout.startDate)")
+            print("ðŸƒ Workout: \(workout.workoutActivityType.rawValue) - Date: \(workout.startDate)")
             
             // Check if workout already exists
             let fetchRequest: NSFetchRequest<WorkoutEntity> = WorkoutEntity.fetchRequest()
@@ -117,7 +117,7 @@ class HealthKitManager: ObservableObject {
             do {
                 let existingWorkouts = try context.fetch(fetchRequest)
                 if !existingWorkouts.isEmpty {
-                    print("⏭️  Skipping duplicate workout")
+                    print("â­ï¸  Skipping duplicate workout")
                     continue // Skip if already imported
                 }
                 
@@ -129,7 +129,7 @@ class HealthKitManager: ObservableObject {
                 workoutEntity.type = mapWorkoutType(workout.workoutActivityType)
                 workoutEntity.calories = workout.totalEnergyBurned?.doubleValue(for: .kilocalorie()) ?? 0
                 
-                print("✅ Mapped to type: \(workoutEntity.type ?? "nil")")
+                print("âœ… Mapped to type: \(workoutEntity.type ?? "nil")")
                 
                 // Fetch heart rate
                 fetchHeartRate(for: workout) { heartRate in
@@ -141,7 +141,7 @@ class HealthKitManager: ObservableObject {
                 
                 try context.save()
             } catch {
-                print("❌ Error saving workout: \(error)")
+                print("âŒ Error saving workout: \(error)")
             }
         }
     }
@@ -166,12 +166,14 @@ class HealthKitManager: ObservableObject {
         let mappedType: String
         
         switch type {
-        // Cardio activities
-        case .running:
-            mappedType = "Cardio"
+        // Walking - separate category
         case .walking:
-            mappedType = "Cardio"
+            mappedType = "Walking"
         case .hiking:
+            mappedType = "Walking"
+            
+        // Cardio activities (running, jogging)
+        case .running:
             mappedType = "Cardio"
         case .stepTraining:
             mappedType = "Cardio"
@@ -287,10 +289,10 @@ class HealthKitManager: ObservableObject {
         // Catch-all for other activities
         default:
             mappedType = "Cardio"
-            print("⚠️ Unknown workout type: \(type.rawValue) - defaulting to Cardio")
+            print("âš ï¸ Unknown workout type: \(type.rawValue) - defaulting to Cardio")
         }
         
-        print("🔄 Mapping HKWorkoutActivityType \(type.rawValue) → \(mappedType)")
+        print("ðŸ”„ Mapping HKWorkoutActivityType \(type.rawValue) â†’ \(mappedType)")
         return mappedType
     }
 }
