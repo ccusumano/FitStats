@@ -19,6 +19,7 @@ struct HomeView: View {
     @State private var showConfetti = false
     @Binding var selectedTab: Int
     @Binding var selectedVisualization: Int
+    @Binding var selectedMonth: Int
     
     var body: some View {
         NavigationView {
@@ -75,7 +76,7 @@ struct HomeView: View {
                                 Text(workout.type ?? "Workout")
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(colorForWorkoutType(workout.type ?? ""))
-                                Text("•")
+                                Text("â€¢")
                                     .foregroundColor(.secondary)
                                 Text("\(Int(workout.duration)) min")
                                     .font(.system(size: 14))
@@ -161,7 +162,11 @@ struct HomeView: View {
                     value: "\(workoutsThisMonth)",
                     subtitle: "Workouts",
                     color: AppColors.primaryOrange,
-                    action: { selectedTab = 2; selectedVisualization = 1 }
+                    action: {
+                        selectedVisualization = 0
+                        selectedMonth = Calendar.current.component(.month, from: Date())
+                        selectedTab = 2
+                    }
                 )
                 
                 StatCard(
@@ -199,6 +204,7 @@ struct HomeView: View {
     private func colorForWorkoutType(_ type: String) -> Color {
         switch type.lowercased() {
         case "cardio": return AppColors.cardioColor
+        case "walking": return AppColors.walkingColor
         case "strength": return AppColors.strengthColor
         case "cycling": return AppColors.cyclingColor
         case "flexibility": return AppColors.flexibilityColor
