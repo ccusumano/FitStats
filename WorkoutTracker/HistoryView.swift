@@ -20,9 +20,9 @@ struct HistoryView: View {
     @Binding var selectedMonth: Int
     @State private var selectedWorkoutType = "All"
     @State private var selectedYear = Calendar.current.component(.year, from: Date())
-    @State private var selectedWorkouts: [WorkoutEntity]?
+    @State private var selectedWorkoutIDs: [NSManagedObjectID] = []
     @State private var showingWorkoutDetail = false
-    
+
     let visualizations = ["Heat Map", "Stats", "Progress"]
     let workoutTypes = ["All", "Cardio", "Walking", "Strength", "Cycling", "Flexibility", "Volleyball", "Sports", "HIIT", "Yoga", "Golf"]
     
@@ -116,16 +116,19 @@ struct HistoryView: View {
                         EmptyView()
                     }
                 }
+                .animation(.none, value: selectedYear)
             }
             .navigationTitle("HISTORY")
             .navigationBarTitleDisplayMode(.large)
             .sheet(isPresented: $showingWorkoutDetail) {
-                if let workouts = selectedWorkouts {
-                    if workouts.count == 1 {
-                        WorkoutDetailSheet(workout: workouts.first!)
-                    } else {
-                        MultiWorkoutSheet(workouts: workouts)
-                    }
+                let fetchedWorkouts = selectedWorkoutIDs.compactMap { objectID -> WorkoutEntity? in
+                    try? viewContext.existingObject(with: objectID) as? WorkoutEntity
+                }
+
+                if fetchedWorkouts.count == 1 {
+                    WorkoutDetailSheet(workout: fetchedWorkouts.first!)
+                } else if fetchedWorkouts.count > 1 {
+                    MultiWorkoutSheet(workouts: fetchedWorkouts)
                 }
             }
         }
@@ -164,7 +167,8 @@ struct HistoryView: View {
     }
     
     private func handleDayTapped(_ workouts: [WorkoutEntity]) {
-        selectedWorkouts = workouts
+        guard !workouts.isEmpty else { return }
+        selectedWorkoutIDs = workouts.compactMap { $0.objectID }
         showingWorkoutDetail = true
     }
 }
@@ -180,7 +184,7 @@ struct YearHeatMapView: View {
     
     var body: some View {
         ScrollViewReader { proxy in
-            VStack(alignment: .leading, spacing: 20) {
+            LazyVStack(alignment: .leading, spacing: 20) {
                 /*
                  Text("HEAT MAP")
                     .font(.system(size: 20, weight: .heavy))
@@ -191,7 +195,7 @@ struct YearHeatMapView: View {
                         .padding(.horizontal)
                         .id(month)
                 }
-                
+
                 // Legend
                 WorkoutLegend()
                     .padding()
@@ -764,7 +768,7 @@ struct MultiWorkoutSheet: View {
     var body: some View {
         NavigationView {
             List(workouts, id: \.id) { workout in
-                NavigationLink(destination: WorkoutDetailSheet(workout: workout)) {
+                NavigationLink(destination: WorkoutDetailSheet(workout: workout, showDoneButton: false)) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(workout.type?.uppercased() ?? "WORKOUT")
                             .font(.system(size: 16, weight: .bold))
@@ -801,13 +805,25 @@ struct MultiWorkoutSheet: View {
 // MARK: - Workout Detail Sheet
 struct WorkoutDetailSheet: View {
     let workout: WorkoutEntity
+    var showDoneButton: Bool = true
     @Environment(\.dismiss) var dismiss
     @Environment(\.managedObjectContext) private var viewContext
     @State private var showingTagEditor = false
-    
+
     var body: some View {
-        NavigationView {
-            ScrollView {
+        Group {
+            if showDoneButton {
+                NavigationView {
+                    detailContent
+                }
+            } else {
+                detailContent
+            }
+        }
+    }
+
+    private var detailContent: some View {
+        ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(workout.type?.uppercased() ?? "WORKOUT")
@@ -880,16 +896,17 @@ struct WorkoutDetailSheet: View {
             .navigationTitle("Workout Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+                if showDoneButton {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") {
+                            dismiss()
+                        }
                     }
                 }
             }
             .sheet(isPresented: $showingTagEditor) {
                 TagEditorView(workout: workout)
             }
-        }
     }
 }
 

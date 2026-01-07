@@ -15,8 +15,7 @@ struct HomeView: View {
         sortDescriptors: [NSSortDescriptor(keyPath: \WorkoutEntity.date, ascending: false)],
         animation: .default)
     private var workouts: FetchedResults<WorkoutEntity>
-    
-    @State private var showConfetti = false
+
     @Binding var selectedTab: Int
     @Binding var selectedVisualization: Int
     @Binding var selectedMonth: Int
@@ -33,20 +32,12 @@ struct HomeView: View {
                     
                     // Quick Stats
                     statsGrid
-                    
-                    // Achievement Animations
-                    if showConfetti {
-                        ConfettiView()
-                    }
                 }
                 .padding()
             }
             .navigationTitle("TODAY")
             .navigationBarTitleDisplayMode(.large)
             .background(Color(.systemBackground))
-            .onAppear {
-                checkAchievements()
-            }
         }
     }
     
@@ -76,8 +67,6 @@ struct HomeView: View {
                                 Text(workout.type ?? "Workout")
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(colorForWorkoutType(workout.type ?? ""))
-                                Text("â€¢")
-                                    .foregroundColor(.secondary)
                                 Text("\(Int(workout.duration)) min")
                                     .font(.system(size: 14))
                                     .foregroundColor(.secondary)
@@ -149,9 +138,9 @@ struct HomeView: View {
                 
                 StatCard(
                     title: "COMPLETION",
-                    value: "\(Int(yearCompletionPercentage))%",
+                    value: "\(Int(yearCompletionPercentage.rounded()))%",
                     subtitle: "Of days",
-                    color: AppColors.secondaryGreen,
+                    color: AppColors.primaryOrange,
                     action: nil
                 )
             }
@@ -173,17 +162,15 @@ struct HomeView: View {
                     title: "THIS WEEK",
                     value: "\(workoutsThisWeek)",
                     subtitle: "Workouts",
-                    color: AppColors.motivationalPink,
+                    color: AppColors.calmingTeal,
                     action: nil
                 )
             }
         }
     }
     
-    @Environment(\.colorScheme) var colorScheme
-    
     private var cardBackground: Color {
-        colorScheme == .dark ? Color(white: 0.15) : AppColors.lightGray
+        Color(.secondarySystemBackground)
     }
     
     // MARK: - Computed Properties
@@ -284,37 +271,27 @@ struct HomeView: View {
         let year = calendar.component(.year, from: Date())
         let startOfYear = calendar.date(from: DateComponents(year: year, month: 1, day: 1))!
         let daysSinceStart = calendar.dateComponents([.day], from: startOfYear, to: Date()).day ?? 0
-        
-        guard daysSinceStart > 0 else { return 0 }
-        return (Double(workoutsThisYear) / Double(daysSinceStart + 1)) * 100
-    }
-    
-    private func checkAchievements() {
-        // Check for 7-day week
-        if workoutsThisWeek >= 7 {
-            showConfetti = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                showConfetti = false
+
+        // daysSinceStart + 1 gives us total days including today
+        // Example: Jan 1 = 0 days since start, but 1 day total (today)
+        let totalDaysInYear = daysSinceStart + 1
+
+        // Count unique days that have at least one workout
+        let workoutsThisYearFiltered = workouts.filter { workout in
+            guard let date = workout.date else { return false }
+            return calendar.component(.year, from: date) == year
+        }
+
+        var uniqueDays = Set<Date>()
+        for workout in workoutsThisYearFiltered {
+            if let date = workout.date {
+                let startOfDay = calendar.startOfDay(for: date)
+                uniqueDays.insert(startOfDay)
             }
         }
-        
-        // Check for >50% month completion
-        let calendar = Calendar.current
-        let daysInMonth = calendar.range(of: .day, in: .month, for: Date())?.count ?? 30
-        if Double(workoutsThisMonth) / Double(daysInMonth) > 0.5 {
-            showConfetti = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                showConfetti = false
-            }
-        }
-        
-        // Check for >50% year completion
-        if yearCompletionPercentage > 50 {
-            showConfetti = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                showConfetti = false
-            }
-        }
+
+        let daysWithWorkouts = uniqueDays.count
+        return (Double(daysWithWorkouts) / Double(totalDaysInYear)) * 100
     }
 }
 
@@ -325,10 +302,8 @@ struct StatCard: View {
     let color: Color
     let action: (() -> Void)?
     
-    @Environment(\.colorScheme) var colorScheme
-    
     private var cardBackground: Color {
-        colorScheme == .dark ? Color(white: 0.15) : AppColors.lightGray
+        Color(.secondarySystemBackground)
     }
     
     var body: some View {
@@ -355,31 +330,5 @@ struct StatCard: View {
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(action == nil)
-    }
-}
-
-struct ConfettiView: View {
-    @State private var animate = false
-    
-    var body: some View {
-        ZStack {
-            ForEach(0..<50, id: \.self) { _ in
-                Circle()
-                    .fill([AppColors.primaryOrange, AppColors.secondaryGreen, AppColors.motivationalPink, AppColors.calmingTeal].randomElement() ?? .orange)
-                    .frame(width: CGFloat.random(in: 5...15))
-                    .position(
-                        x: CGFloat.random(in: 0...UIScreen.main.bounds.width),
-                        y: animate ? UIScreen.main.bounds.height + 100 : -100
-                    )
-                    .animation(
-                        Animation.linear(duration: Double.random(in: 2...4))
-                            .repeatCount(1, autoreverses: false),
-                        value: animate
-                    )
-            }
-        }
-        .onAppear {
-            animate = true
-        }
     }
 }
