@@ -154,37 +154,46 @@ struct WorkoutPlanRow: View {
 struct AddWorkoutPlanView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) var dismiss
-    
+
     @State private var name = ""
     @State private var description = ""
     @State private var selectedType = "Cardio"
     @State private var exercises = ""
-    
+    @State private var showingStrengthPlanView = false
+
     let workoutTypes = ["Cardio", "Strength", "Cycling", "Flexibility", "Volleyball", "Sports", "HIIT", "Yoga", "Golf"]
-    
+
     var body: some View {
         NavigationView {
             Form {
                 Section(header: Text("PLAN DETAILS")) {
                     TextField("Plan Name", text: $name)
                         .font(.system(size: 16, weight: .semibold))
-                    
+
                     Picker("Type", selection: $selectedType) {
                         ForEach(workoutTypes, id: \.self) { type in
                             Text(type).tag(type)
                         }
                     }
-                    
+
                     TextField("Description (optional)", text: $description)
                         .font(.system(size: 14))
                 }
-                
-                Section(header: Text("EXERCISES")) {
-                    TextEditor(text: $exercises)
-                        .frame(minHeight: 150)
-                        .font(.system(size: 14))
+
+                if selectedType != "Strength" {
+                    Section(header: Text("EXERCISES")) {
+                        TextEditor(text: $exercises)
+                            .frame(minHeight: 150)
+                            .font(.system(size: 14))
+                    }
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                } else {
+                    Section {
+                        Text("For strength workouts, you'll set up days and exercises in the next step")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
                 }
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             }
             .navigationTitle("New Workout Plan")
             .navigationBarTitleDisplayMode(.inline)
@@ -194,18 +203,32 @@ struct AddWorkoutPlanView: View {
                         dismiss()
                     }
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        savePlan()
+                    Button(selectedType == "Strength" ? "Next" : "Save") {
+                        if selectedType == "Strength" {
+                            showingStrengthPlanView = true
+                        } else {
+                            savePlan()
+                        }
                     }
                     .disabled(name.isEmpty)
                     .fontWeight(.bold)
                 }
             }
+            .fullScreenCover(isPresented: $showingStrengthPlanView, onDismiss: {
+                dismiss()
+            }) {
+                AddEditStrengthPlanView(
+                    plan: nil,
+                    planName: name,
+                    planDescription: description,
+                    planType: selectedType
+                )
+            }
         }
     }
-    
+
     private func savePlan() {
         let newPlan = WorkoutPlanEntity(context: viewContext)
         newPlan.id = UUID()
@@ -214,7 +237,7 @@ struct AddWorkoutPlanView: View {
         newPlan.type = selectedType
         newPlan.exercises = exercises.isEmpty ? nil : exercises
         newPlan.createdDate = Date()
-        
+
         do {
             try viewContext.save()
             dismiss()
@@ -227,8 +250,23 @@ struct AddWorkoutPlanView: View {
 struct WorkoutPlanDetailView: View {
     let plan: WorkoutPlanEntity
     @Environment(\.managedObjectContext) private var viewContext
+
+    var body: some View {
+        Group {
+            if plan.isStructuredStrength {
+                StrengthPlanDetailView(plan: plan)
+            } else {
+                LegacyPlanDetailView(plan: plan)
+            }
+        }
+    }
+}
+
+struct LegacyPlanDetailView: View {
+    let plan: WorkoutPlanEntity
+    @Environment(\.managedObjectContext) private var viewContext
     @State private var showingEditSheet = false
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -237,16 +275,16 @@ struct WorkoutPlanDetailView: View {
                         Label(plan.type ?? "Workout", systemImage: iconForWorkoutType(plan.type ?? ""))
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(colorForWorkoutType(plan.type ?? ""))
-                        
+
                         Spacer()
-                        
+
                         if let date = plan.createdDate {
                             Text(date, style: .date)
                                 .font(.system(size: 14))
                                 .foregroundColor(.secondary)
                         }
                     }
-                    
+
                     if let description = plan.planDescription, !description.isEmpty {
                         Text(description)
                             .font(.system(size: 16))
@@ -254,21 +292,22 @@ struct WorkoutPlanDetailView: View {
                     }
                 }
                 .padding()
-                .background(AppColors.lightGray)
+                .background(Color(.secondarySystemBackground))
                 .cornerRadius(12)
-                
+
                 if let exercises = plan.exercises, !exercises.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("EXERCISES")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.secondary)
-                        
+
                         Text(exercises)
                             .font(.system(size: 16))
+                            .foregroundColor(.primary)
                             .lineSpacing(6)
                     }
                     .padding()
-                    .background(AppColors.lightGray)
+                    .background(Color(.secondarySystemBackground))
                     .cornerRadius(12)
                 }
             }
