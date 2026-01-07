@@ -123,6 +123,7 @@ struct WorkoutPlanRow: View {
     private func colorForWorkoutType(_ type: String) -> Color {
         switch type.lowercased() {
         case "cardio": return AppColors.cardioColor
+        case "walking": return AppColors.walkingColor
         case "strength": return AppColors.strengthColor
         case "cycling": return AppColors.cyclingColor
         case "flexibility": return AppColors.flexibilityColor
@@ -138,6 +139,7 @@ struct WorkoutPlanRow: View {
     private func iconForWorkoutType(_ type: String) -> String {
         switch type.lowercased() {
         case "cardio": return "heart.fill"
+        case "walking": return "figure.walk"
         case "strength": return "dumbbell.fill"
         case "cycling": return "bicycle"
         case "flexibility": return "figure.mind.and.body"
@@ -146,7 +148,7 @@ struct WorkoutPlanRow: View {
         case "hiit": return "flame.fill"
         case "yoga": return "figure.yoga"
         case "golf": return "figure.golf"
-        default: return "figure.walk"
+        default: return "figure.mixed.cardio"
         }
     }
 }
@@ -331,6 +333,7 @@ struct LegacyPlanDetailView: View {
     private func colorForWorkoutType(_ type: String) -> Color {
         switch type.lowercased() {
         case "cardio": return AppColors.cardioColor
+        case "walking": return AppColors.walkingColor
         case "strength": return AppColors.strengthColor
         case "cycling": return AppColors.cyclingColor
         case "flexibility": return AppColors.flexibilityColor
@@ -346,6 +349,7 @@ struct LegacyPlanDetailView: View {
     private func iconForWorkoutType(_ type: String) -> String {
         switch type.lowercased() {
         case "cardio": return "heart.fill"
+        case "walking": return "figure.walk"
         case "strength": return "dumbbell.fill"
         case "cycling": return "bicycle"
         case "flexibility": return "figure.mind.and.body"
@@ -354,7 +358,7 @@ struct LegacyPlanDetailView: View {
         case "hiit": return "flame.fill"
         case "yoga": return "figure.yoga"
         case "golf": return "figure.golf"
-        default: return "figure.walk"
+        default: return "figure.mixed.cardio"
         }
     }
 }
@@ -369,7 +373,7 @@ struct EditWorkoutPlanView: View {
     @State private var selectedType = "Cardio"
     @State private var exercises = ""
     
-    let workoutTypes = ["Cardio", "Strength", "Flexibility", "Sports", "HIIT", "Yoga", "Golf"]
+    let workoutTypes = ["Cardio", "Walking", "Strength", "Cycling", "Flexibility", "Volleyball", "Sports", "HIIT", "Yoga", "Golf"]
     
     var body: some View {
         NavigationView {

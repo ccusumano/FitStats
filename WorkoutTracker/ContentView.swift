@@ -10,11 +10,12 @@ import SwiftUI
 struct ContentView: View {
     @State private var selectedTab = 0
     @State private var selectedVisualization = 0
+    @State private var selectedMonth = Calendar.current.component(.month, from: Date())
     @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            HomeView(selectedTab: $selectedTab, selectedVisualization: $selectedVisualization)
+            HomeView(selectedTab: $selectedTab, selectedVisualization: $selectedVisualization, selectedMonth: $selectedMonth)
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }
@@ -26,7 +27,7 @@ struct ContentView: View {
                 }
                 .tag(1)
             
-            HistoryView(selectedVisualization: $selectedVisualization)
+            HistoryView(selectedVisualization: $selectedVisualization, selectedMonth: $selectedMonth)
                 .tabItem {
                     Label("History", systemImage: "chart.bar.fill")
                 }
@@ -59,6 +60,7 @@ struct AppColors {
     
     // Workout type colors
     static let cardioColor = Color(hex: "#00BCD4") // sky blue
+    static let walkingColor = Color(hex: "#4CAF50") // green
     static let strengthColor = Color(hex: "#025D93") // dark blue
     static let cyclingColor = Color(hex: "#C08CA7") // light purple
     static let flexibilityColor = Color(hex: "#A8E6A1")
